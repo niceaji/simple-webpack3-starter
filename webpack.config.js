@@ -1,31 +1,45 @@
-const path = require('path')
-const HtmlWebpackPlugin = require('html-webpack-plugin')
-const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
+const path = require('path');
+const webpack = require('webpack');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 
 const dist = path.join(__dirname, 'dist');
-const isProduction = (process.env.NODE_ENV === 'production');
-
+const isProduction = process.env.NODE_ENV === 'production';
+const presets = [
+  [
+    'env',
+    {
+      targets: {
+        browsers: ['last 2 versions', '> 5% in KR']
+      },
+      debug: true
+    }
+  ]
+];
 
 const config = {
-
   entry: './src/index.js',
+  devtool: 'eval',
   devServer: {
     contentBase: dist,
     port: 9000,
-    // compress: true,
-    // allowedHosts: ['local.com']
+    compress: true
   },
   output: {
     filename: 'app.js',
     path: dist
   },
+  resolve: {
+    modules: ['node_modules', 'src'],
+    extensions: ['.json', '.js']
+  },
   module: {
     rules: [
       {
-        test: /\.(js|jsx)$/,
-        exclude: /node_modules/,
-        loader: 'babel-loader'
+        test: /\.js$/,
+        loader: 'babel-loader',
+        options: { presets: presets },
+        exclude: /node_modules/
       },
       {
         test: /\.(css|scss)$/,
@@ -43,11 +57,23 @@ const config = {
     }),
     new ExtractTextPlugin('app.css')
   ]
+};
 
-}
-
-if(isProduction) {
-  config.plugins.push(new UglifyJSPlugin());
+if (isProduction) {
+  config.devtool = 'sourcemap';
+  config.plugins.push(
+    new webpack.optimize.UglifyJsPlugin({
+      sourceMap: true,
+      compress: {
+        warnings: false
+      }
+    })
+  );
+  config.plugins.push(
+    new webpack.DefinePlugin({
+      'process.env.NODE_ENV': JSON.stringify('production')
+    })
+  );
 }
 
 module.exports = config;
